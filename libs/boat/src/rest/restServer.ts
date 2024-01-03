@@ -1,12 +1,13 @@
-import { HttpAdapterHost, NestFactory } from '@nestjs/core';
-import { useContainer } from 'class-validator';
-import { ServerOptions } from './interfaces';
-import { ConfigService } from '@nestjs/config';
-import { RequestGuard } from './guards';
-import { ExceptionFilter } from '../exceptions';
-import * as Sentry from '@sentry/node';
-import * as Tracing from '@sentry/tracing';
-import { TimeoutInterceptor } from './timeoutInterceptor';
+import { HttpAdapterHost, NestFactory } from "@nestjs/core";
+import { useContainer } from "class-validator";
+import { ServerOptions } from "./interfaces";
+import { ConfigService } from "@nestjs/config";
+import { RequestGuard } from "./guards";
+import { ExceptionFilter } from "../exceptions";
+import * as Sentry from "@sentry/node";
+import * as Tracing from "@sentry/tracing";
+import { TimeoutInterceptor } from "./timeoutInterceptor";
+import { rateLimiter } from "./rateLimiter";
 
 export class RestServer {
   private module: any;
@@ -27,14 +28,18 @@ export class RestServer {
     app.enableCors({
       origin: true,
     });
+    app.use(rateLimiter);
+
 
     const config = app.get(ConfigService, { strict: false });
     const server = app.getHttpServer();
 
     Sentry.init({
-      dsn: config.get('app.sentryDsn'),
-      environment: config.get('app.env'),
-      enabled: config.get('app.env') === 'prod' || config.get('app.env') === 'production',
+      dsn: config.get("app.sentryDsn"),
+      environment: config.get("app.env"),
+      enabled:
+        config.get("app.env") === "prod" ||
+        config.get("app.env") === "production",
       integrations: [
         new Sentry.Integrations.Http({ tracing: true }),
         new Tracing.Integrations.Express({
@@ -42,7 +47,7 @@ export class RestServer {
         }),
         new Tracing.Integrations.Postgres(),
       ],
-      tracesSampleRate: config.get('app.SentrySampleRate'),
+      tracesSampleRate: config.get("app.SentrySampleRate"),
     });
     app.use(Sentry.Handlers.requestHandler());
     app.use(Sentry.Handlers.tracingHandler());
@@ -56,7 +61,7 @@ export class RestServer {
     app.useGlobalFilters(new ExceptionFilter(httpAdapter));
 
     options.globalPrefix && app.setGlobalPrefix(options.globalPrefix);
-    const appPort = options.port || config.get<number>('app.port');
+    const appPort = options.port || config.get<number>("app.port");
     await app.listen(appPort);
     console.log(`🚀 ${module.name} is running on appPort - ${appPort}`);
   }
