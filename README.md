@@ -10,6 +10,8 @@
 <br />
 <div>-step1: install pm2 on device</div>
 <br />
+<div>-step1: run redis-server</div>
+<br />
 <div>-step3: npm i</div>
 <br />
 <div>-step 4: npm run start:dev in one terminal window</div>
